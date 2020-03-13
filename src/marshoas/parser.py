@@ -1,6 +1,5 @@
 #coding=utf-8
 
-import queue
 from marshmallow import (
     Schema,
     fields,
@@ -25,7 +24,7 @@ OPTIONS_MAPPING = {
 }
 
 
-def parse_model(schema):
+def parse_model(schema: Schema) -> dict:
     if isinstance(schema, fields.Field):
         return {
             'type': PRIMITIVE_TYPE_MAPPING.get(schema.__class__)
@@ -53,14 +52,14 @@ def parse_model(schema):
     return rv
 
 
-def _process_object_field(data):
+def _process_object_field(data: dict) -> dict:
     return {
         'type': 'object',
         'properties': data
     }
 
 
-def _process_array_field(data):
+def _process_array_field(data: dict) -> dict:
     return {
         'type': 'array',
         'items': {
@@ -70,7 +69,7 @@ def _process_array_field(data):
     }
 
 
-def parse_parameter(name, schema):
+def parse_parameter(name: str, schema: Schema) -> dict:
     rv = dict()
     for key, field in schema._declared_fields.items():
         if isinstance(field, fields.Nested):

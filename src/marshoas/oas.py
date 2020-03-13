@@ -2,15 +2,17 @@
 
 import typing as T
 import json
+from marshmallow import Schema
+from marshoas import parser
 
 
 class Operation:
     def __init__(
             self,
             method: str = 'get',
-            summary: str = None,
-            description: str = None,
-            op_id: str = None
+            summary: str = "",
+            description: str = "",
+            op_id: str = ""
     ):
         self.method: str = method
         self.summary: str = summary
@@ -19,21 +21,43 @@ class Operation:
         self.parameters: T.List[dict] = list()
         self.request_body: dict = dict()
         self.responses: T.Dict[int, dict] = dict()
-
-    def add_parameter(
-            self,
-            parameter: dict
-    ):
-        self.parameters.append(parameter)
+        self.schema = None
 
     def add_response(
             self,
-            status_code,
-            response
+            schema_or_dict=None,
+            status_code=200,
+            schema_type="application/json",
+            description="",
     ):
+        if schema_or_dict:
+            assert isinstance(schema_or_dict, (dict, Schema)), \
+                'Schema of response must be instance of dict or marshmallow.Schema'
         if status_code in self.responses:
             raise ValueError('Can\'t add response because status code existed')
-        self.responses[status_code] = response
+
+        self.responses[status_code] = {
+            'description': description,
+            'schema_type': schema_type,
+            'schema': schema_or_dict
+        }
+
+    def to_json(self) -> dict:
+        responses = dict()
+        for code, resp in self.responses.items():
+            responses[code] = {
+                'description': resp['description'],
+                'content': {
+                    resp['schema_type']: {
+                        'schema': resp['schema'] if isinstance(resp, dict) else parser.parse_model(resp['schema'])
+                    }
+                }
+            }
+        return {
+            'summary': self.summary,
+            'description': self.description,
+            'responses': responses
+        }
 
 
 class OpenAPI:
@@ -71,9 +95,9 @@ class OpenAPI:
     def to_json(self, dump: bool = False):
         paths_json = dict()
         rv = {
-            'openapi': self.version,
+            'openapi': "3.0.0",
             'info': {
-                'title': '3.0.0',
+                'title': self.title,
                 'description': self.description,
                 'version': self.version
             },
@@ -83,11 +107,7 @@ class OpenAPI:
         for url, operations in self.paths.items():
             ops_json = dict()
             for op in operations:
-                ops_json[op] = {
-                    'summary': op.summary,
-                    'description': op.description,
-                    'responses': op.responses
-                }
+                ops_json[op.method] = op.to_json()
             paths_json[url] = ops_json
 
         if dump:

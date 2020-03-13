@@ -10,9 +10,14 @@ main.py
 """
 
 import json
-from marshoas import parser
+import marshoas
 import schema
 
 
-data = parser.parse_model(schema.Person())
-print(json.dumps(data))
+data = marshoas.parser.parse_model(schema.Person())
+
+spec = marshoas.OpenAPI()
+ops = marshoas.Operation()
+ops.add_response(data, status_code=400, schema_type="application/json")
+spec.add_operation('/products', ops)
+print(json.dumps(spec.to_json()))
