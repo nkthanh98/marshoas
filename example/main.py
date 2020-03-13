@@ -9,15 +9,18 @@
 main.py
 """
 
-import json
 import marshoas
-import schema
 
 
-data = marshoas.parser.parse_model(schema.Person())
+app = marshoas.Application(__name__, url_doc='/docs')
+ns = marshoas.Namespace('lmao', __name__)
 
-spec = marshoas.OpenAPI()
-ops = marshoas.Operation()
-ops.add_response(data, status_code=400, schema_type="application/json")
-spec.add_operation('/products', ops)
-print(json.dumps(spec.to_json()))
+@ns.resource('/lmao')
+class Lmao(marshoas.Resource):
+    def get(self):
+        return 'DMM'
+
+app.register_blueprint(ns, url_prefix='/dmm')
+
+if __name__ == '__main__':
+    app.run()

@@ -3,7 +3,6 @@
 from marshmallow import (
     Schema,
     fields,
-    utils,
 )
 
 PRIMITIVE_TYPE_MAPPING = {
@@ -24,55 +23,28 @@ OPTIONS_MAPPING = {
 }
 
 
-def parse_model(schema: Schema) -> dict:
-    if isinstance(schema, fields.Field):
-        return {
-            'type': PRIMITIVE_TYPE_MAPPING.get(schema.__class__)
-        }
-    rv = dict()
-    for field_name, field in schema._declared_fields.items():
+class Parser:
+    @classmethod
+    def parse_field(cls, field: fields.Field) -> dict:
         if isinstance(field, fields.Nested):
-            nested_struct = parse_model(field.nested)
+            nested = cls.parse_schema(field.nested)
             if field.many:
-                if isinstance(field.nested, fields.Field):
-                    rv[field_name] = {
-                        'type': 'array',
-                        'items': {
-                            'type': PRIMITIVE_TYPE_MAPPING.get(field.nested.__class__)
-                        }
-                    }
-                else:
-                    rv[field_name] = _process_array_field(nested_struct)
-            else:
-                rv[field_name] = _process_object_field(nested_struct)
-        else:
-            rv[field_name] = {
-                'type': PRIMITIVE_TYPE_MAPPING.get(field.__class__)
-            }
-    return rv
-
-
-def _process_object_field(data: dict) -> dict:
-    return {
-        'type': 'object',
-        'properties': data
-    }
-
-
-def _process_array_field(data: dict) -> dict:
-    return {
-        'type': 'array',
-        'items': {
-            'type': 'object',
-            'properties': data
+                return {
+                    'type': 'array',
+                    'items': nested
+                }
+            return nested
+        return {
+            'type': PRIMITIVE_TYPE_MAPPING.get(field.__class__)
         }
-    }
 
+    @classmethod
+    def parse_schema(cls, schema: Schema) -> dict:
+        rv = dict()
+        for name, field in schema._declared_fields.items():
+            rv[name] = cls.parse_field(field)
 
-def parse_parameter(name: str, schema: Schema) -> dict:
-    rv = dict()
-    for key, field in schema._declared_fields.items():
-        if isinstance(field, fields.Nested):
-            raise ValueError('Field in parameters must be primitive type')
-        rv[key] = PRIMITIVE_TYPE_MAPPING.get(field.__class__)
-    return rv
+        return {
+            'type': 'object',
+            'properties': rv
+        }

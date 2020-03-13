@@ -42,14 +42,14 @@ class Operation:
             'schema': schema_or_dict
         }
 
-    def to_json(self) -> dict:
+    def to_dict(self) -> dict:
         responses = dict()
         for code, resp in self.responses.items():
             responses[code] = {
                 'description': resp['description'],
                 'content': {
                     resp['schema_type']: {
-                        'schema': resp['schema'] if isinstance(resp, dict) else parser.parse_model(resp['schema'])
+                        'schema': resp['schema'] if isinstance(resp, dict) else parser.Parser.parse_schema(resp['schema'])
                     }
                 }
             }
@@ -92,7 +92,7 @@ class OpenAPI:
             self.paths[url] = list()
         self.paths[url].append(operation)
 
-    def to_json(self, dump: bool = False):
+    def to_dict(self, dump: bool = False):
         paths_json = dict()
         rv = {
             'openapi': "3.0.0",
@@ -107,7 +107,7 @@ class OpenAPI:
         for url, operations in self.paths.items():
             ops_json = dict()
             for op in operations:
-                ops_json[op.method] = op.to_json()
+                ops_json[op.method] = op.to_dict()
             paths_json[url] = ops_json
 
         if dump:

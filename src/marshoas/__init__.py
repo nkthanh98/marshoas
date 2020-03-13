@@ -8,11 +8,19 @@ from .oas import (
     OpenAPI,
     Operation
 )
+from .wrapper import (
+    Namespace,
+    Resource,
+    Application,
+)
 
 
 __all__ = (
     'OpenAPI',
-    'Operation'
+    'Operation',
+    'Namespace',
+    'Resource',
+    'Application',
 )
 
 
