@@ -45,11 +45,16 @@ class Operation:
     def to_dict(self) -> dict:
         responses = dict()
         for code, resp in self.responses.items():
+            content_dump = dict()
+            if isinstance(resp['schema'], dict):
+                content_dump = resp['schema']
+            else:
+                content_dump = parser.Parser.parse_schema(resp['schema'])
             responses[code] = {
                 'description': resp['description'],
                 'content': {
                     resp['schema_type']: {
-                        'schema': resp['schema'] if isinstance(resp, dict) else parser.Parser.parse_schema(resp['schema'])
+                        'schema': content_dump
                     }
                 }
             }
